@@ -3,97 +3,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WARUNG MAS ADE - Semi Minimarket</title>
+<title>WARUNG MAS ADE - PRO MAX</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body{font-family:Arial;margin:0;background:#f4f6f9}
-header{background:#2c3e50;color:white;padding:15px;text-align:center;font-size:20px}
-nav{display:flex;gap:10px;padding:10px;background:#34495e}
-nav button{flex:1;padding:10px;border:none;background:#2ecc71;color:white;font-weight:bold;cursor:pointer}
+body{font-family:Arial;margin:0;background:#eef2f7}
+header{background:#1f2937;color:white;padding:15px;text-align:center;font-size:22px}
+nav{display:flex;gap:5px;background:#111827;padding:10px}
+nav button{flex:1;padding:10px;border:none;background:#10b981;color:white;font-weight:bold;cursor:pointer}
 section{display:none;padding:15px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-table,th,td{border:1px solid #ddd}
-th,td{padding:8px;text-align:left}
-input,select,button{padding:8px;margin:5px 0}
-.card{background:white;padding:15px;margin:10px 0;border-radius:8px}
+.card{background:white;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px;text-align:left}
 .total{font-size:20px;font-weight:bold}
+.alert{color:red;font-weight:bold}
 </style>
 </head>
 <body>
 
-<header>🏪 WARUNG MAS ADE - Semi Minimarket</header>
+<header>🏪 WARUNG MAS ADE - PRO MAX</header>
 
 <nav>
 <button onclick="showPage('dashboard')">Dashboard</button>
 <button onclick="showPage('barang')">Master Barang</button>
 <button onclick="showPage('kasir')">Kasir</button>
-<button onclick="showPage('hutang')">Hutang</button>
+<button onclick="showPage('laporan')">Laporan</button>
 </nav>
 
+<!-- DASHBOARD -->
 <section id="dashboard">
+<div class="grid">
 <div class="card">
-<h3>Total Penjualan Hari Ini</h3>
-<div id="totalHariIni" class="total">Rp 0</div>
+<h3>Penjualan Hari Ini</h3>
+<div id="hariIni" class="total">Rp 0</div>
+</div>
+<div class="card">
+<h3>Penjualan Bulan Ini</h3>
+<div id="bulanIni" class="total">Rp 0</div>
+</div>
+<div class="card">
+<h3>Total Transaksi</h3>
+<div id="totalTransaksi" class="total">0</div>
+</div>
+</div>
+
+<div class="card">
+<h3>Grafik Penjualan</h3>
+<canvas id="grafik"></canvas>
+</div>
+
+<div class="card">
+<h3>⚠ Barang Hampir Habis</h3>
+<div id="stokAlert"></div>
 </div>
 </section>
 
+<!-- MASTER BARANG -->
 <section id="barang">
+<div class="card">
 <h3>Tambah Barang</h3>
-<input id="namaBarang" placeholder="Nama Barang">
-<input id="kategori" placeholder="Kategori">
-<input id="hargaBeli" type="number" placeholder="Harga Beli">
-<input id="hargaJual" type="number" placeholder="Harga Jual">
+<input id="nama" placeholder="Nama">
+<input id="harga" type="number" placeholder="Harga Jual">
 <input id="stok" type="number" placeholder="Stok">
+<input id="minStok" type="number" placeholder="Minimum Stok">
 <input id="barcode" placeholder="Barcode">
 <button onclick="tambahBarang()">Simpan</button>
+</div>
 
+<div class="card">
 <h3>Daftar Barang</h3>
 <table>
 <thead>
 <tr><th>Nama</th><th>Stok</th><th>Harga</th></tr>
 </thead>
-<tbody id="tabelBarang"></tbody>
+<tbody id="listBarang"></tbody>
 </table>
+</div>
 </section>
 
+<!-- KASIR -->
 <section id="kasir">
-<h3>Scan Barcode</h3>
 <div id="reader" style="width:300px"></div>
+<div class="card">
 <h3>Keranjang</h3>
 <table>
 <thead>
 <tr><th>Nama</th><th>Qty</th><th>Subtotal</th></tr>
 </thead>
-<tbody id="keranjang"></tbody>
+<tbody id="cart"></tbody>
 </table>
 <div class="total">Total: Rp <span id="total">0</span></div>
-<select id="metode">
-<option>Cash</option>
-<option>Transfer</option>
-<option>Hutang</option>
-</select>
-<button onclick="simpanTransaksi()">Simpan Transaksi</button>
+<button onclick="simpanTransaksi()">Simpan</button>
+</div>
 </section>
 
-<section id="hutang">
-<h3>Data Hutang</h3>
+<!-- LAPORAN -->
+<section id="laporan">
+<div class="card">
+<h3>Rekap Transaksi</h3>
+<button onclick="exportCSV()">Export Excel</button>
 <table>
 <thead>
-<tr><th>Nama</th><th>Sisa</th><th>Status</th></tr>
+<tr><th>Tanggal</th><th>Total</th></tr>
 </thead>
-<tbody id="dataHutang"></tbody>
+<tbody id="dataLaporan"></tbody>
 </table>
+</div>
 </section>
 
 <script>
 const firebaseConfig = {
 databaseURL: "https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -101,52 +127,54 @@ function showPage(id){
 document.querySelectorAll("section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
 }
-showPage('dashboard');
+showPage("dashboard");
 
 function tambahBarang(){
-const id = Date.now();
+let id=Date.now();
 db.ref("barang/"+id).set({
-nama: namaBarang.value,
-kategori: kategori.value,
-hargaBeli: Number(hargaBeli.value),
-hargaJual: Number(hargaJual.value),
-stok: Number(stok.value),
-barcode: barcode.value
+nama:nama.value,
+harga:Number(harga.value),
+stok:Number(stok.value),
+minStok:Number(minStok.value),
+barcode:barcode.value
 });
 alert("Barang disimpan");
 }
 
-db.ref("barang").on("value", snap=>{
-let html="";
-snap.forEach(data=>{
-let b=data.val();
-html+=`<tr><td>${b.nama}</td><td>${b.stok}</td><td>${b.hargaJual}</td></tr>`;
+db.ref("barang").on("value",snap=>{
+let html="",alert="";
+snap.forEach(d=>{
+let b=d.val();
+html+=`<tr><td>${b.nama}</td><td>${b.stok}</td><td>${b.harga}</td></tr>`;
+if(b.stok<=b.minStok){
+alert+=`<div class='alert'>${b.nama} (Stok: ${b.stok})</div>`;
+}
 });
-tabelBarang.innerHTML=html;
+listBarang.innerHTML=html;
+stokAlert.innerHTML=alert;
 });
 
-let cart={};
-function tambahKeKeranjang(barcode){
+let cartData={};
+function tambahKeranjang(barcode){
 db.ref("barang").orderByChild("barcode").equalTo(barcode).once("value",snap=>{
 snap.forEach(d=>{
 let b=d.val();
-if(!cart[d.key]) cart[d.key]={...b,qty:0};
-cart[d.key].qty++;
+if(!cartData[d.key]) cartData[d.key]={...b,qty:0};
+cartData[d.key].qty++;
 renderCart();
 });
 });
 }
 
 function renderCart(){
-let html="";
-let total=0;
-for(let id in cart){
-let item=cart[id];
-let sub=item.qty*item.hargaJual;
+let html="",total=0;
+for(let id in cartData){
+let item=cartData[id];
+let sub=item.qty*item.harga;
 total+=sub;
 html+=`<tr><td>${item.nama}</td><td>${item.qty}</td><td>${sub}</td></tr>`;
 }
-keranjang.innerHTML=html;
+cart.innerHTML=html;
 document.getElementById("total").innerText=total;
 }
 
@@ -154,19 +182,77 @@ function simpanTransaksi(){
 let id=Date.now();
 let total=document.getElementById("total").innerText;
 db.ref("transaksi/"+id).set({
-tanggal:new Date().toLocaleDateString(),
-total:Number(total),
-metode:metode.value,
-items:cart
+tanggal:new Date().toISOString(),
+total:Number(total)
 });
-alert("Transaksi disimpan");
-cart={};
+cartData={};
 renderCart();
+alert("Transaksi tersimpan");
+}
+
+db.ref("transaksi").on("value",snap=>{
+let hariIni=0,bulanIni=0,totalTrx=0;
+let dataGrafik={},laporan="";
+let today=new Date().toISOString().slice(0,10);
+let bulan=new Date().toISOString().slice(0,7);
+
+snap.forEach(d=>{
+let t=d.val();
+let tgl=t.tanggal.slice(0,10);
+totalTrx++;
+if(tgl===today) hariIni+=t.total;
+if(t.tanggal.slice(0,7)===bulan) bulanIni+=t.total;
+
+if(!dataGrafik[tgl]) dataGrafik[tgl]=0;
+dataGrafik[tgl]+=t.total;
+
+laporan+=`<tr><td>${tgl}</td><td>${t.total}</td></tr>`;
+});
+
+document.getElementById("hariIni").innerText="Rp "+hariIni;
+document.getElementById("bulanIni").innerText="Rp "+bulanIni;
+document.getElementById("totalTransaksi").innerText=totalTrx;
+dataLaporan.innerHTML=laporan;
+
+updateChart(dataGrafik);
+});
+
+let chart;
+function updateChart(data){
+let ctx=document.getElementById("grafik").getContext("2d");
+let labels=Object.keys(data);
+let values=Object.values(data);
+
+if(chart) chart.destroy();
+chart=new Chart(ctx,{
+type:"line",
+data:{
+labels:labels,
+datasets:[{
+label:"Penjualan",
+data:values,
+borderWidth:2
+}]
+}
+});
+}
+
+function exportCSV(){
+let csv="Tanggal,Total\n";
+document.querySelectorAll("#dataLaporan tr").forEach(row=>{
+let cols=row.querySelectorAll("td");
+csv+=cols[0].innerText+","+cols[1].innerText+"\n";
+});
+let blob=new Blob([csv],{type:"text/csv"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="laporan.csv";
+a.click();
 }
 
 const scanner = new Html5Qrcode("reader");
 scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-barcode => tambahKeKeranjang(barcode));
+barcode => tambahKeranjang(barcode));
 </script>
 
 </body>
