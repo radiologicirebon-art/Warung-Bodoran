@@ -10,20 +10,191 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{font-family:Arial;margin:0;background:#eef2f7}
-header{background:#111827;color:white;padding:15px;text-align:center}
-nav{display:flex;gap:5px;background:#1f2937;padding:8px}
-nav button{flex:1;padding:10px;border:none;background:#10b981;color:white;border-radius:6px}
-section{display:none;padding:12px}
-.card{background:white;padding:12px;margin-bottom:12px;border-radius:10px}
-input{width:100%;padding:8px;margin:5px 0}
-button{padding:8px;margin-top:5px}
-.login-box{max-width:350px;margin:80px auto;background:white;padding:20px;border-radius:12px}
-.logout{background:red !important}
-.hidden{display:none !important}
-.item-list div{padding:8px;border-bottom:1px solid #ddd;cursor:pointer}
-.item-list div:hover{background:#f3f4f6}
-.total{font-size:18px;font-weight:bold}
+*{
+  box-sizing:border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body{
+  margin:0;
+  background:linear-gradient(135deg,#f1f5f9,#e2e8f0);
+  color:#1e293b;
+}
+
+/* HEADER */
+header{
+  background:linear-gradient(90deg,#0f172a,#1e293b);
+  color:white;
+  padding:16px;
+  font-size:18px;
+  font-weight:600;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+/* NAV */
+nav{
+  display:flex;
+  gap:10px;
+  padding:10px;
+  background:white;
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+}
+
+nav button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-weight:600;
+  background:#e2e8f0;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+nav button:hover{
+  background:#10b981;
+  color:white;
+}
+
+/* SECTION */
+section{
+  display:none;
+  padding:16px;
+}
+
+/* CARD */
+.card{
+  background:white;
+  padding:18px;
+  margin-bottom:18px;
+  border-radius:16px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.05);
+}
+
+/* INPUT */
+input{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:10px;
+  border:1px solid #cbd5e1;
+  font-size:14px;
+  transition:0.2s;
+}
+
+input:focus{
+  outline:none;
+  border-color:#10b981;
+  box-shadow:0 0 0 2px rgba(16,185,129,0.2);
+}
+
+/* BUTTON */
+button{
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-weight:600;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:hover{
+  opacity:0.9;
+}
+
+.logout{
+  background:#ef4444;
+  color:white;
+}
+
+.card button{
+  background:#10b981;
+  color:white;
+  width:100%;
+  margin-top:8px;
+}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th{
+  text-align:left;
+  padding:10px;
+  background:#f1f5f9;
+  font-size:13px;
+}
+
+td{
+  padding:10px;
+  border-bottom:1px solid #e2e8f0;
+  font-size:14px;
+}
+
+tr:hover{
+  background:#f8fafc;
+}
+
+/* TOTAL */
+.total{
+  font-size:20px;
+  font-weight:700;
+  margin-top:10px;
+  color:#0f172a;
+}
+
+/* LOGIN */
+.login-box{
+  max-width:380px;
+  margin:120px auto;
+  background:white;
+  padding:30px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+  text-align:center;
+}
+
+.login-box h3{
+  margin-bottom:20px;
+}
+
+.login-box button{
+  background:#10b981;
+  color:white;
+  width:100%;
+  margin-top:10px;
+}
+
+/* SEARCH LIST */
+.item-list{
+  max-height:180px;
+  overflow-y:auto;
+  border-radius:10px;
+  margin-top:5px;
+}
+
+.item-list div{
+  padding:10px;
+  cursor:pointer;
+  border-bottom:1px solid #e2e8f0;
+}
+
+.item-list div:hover{
+  background:#10b981;
+  color:white;
+}
+
+/* RESPONSIVE */
+@media(min-width:768px){
+  section{
+    max-width:900px;
+    margin:auto;
+  }
+}
 </style>
 </head>
 <body>
