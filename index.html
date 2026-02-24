@@ -126,8 +126,13 @@ const db = firebase.database();
 function showPage(id){
 document.querySelectorAll("section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
+
+if(id==="kasir") startScanner();
 }
+
 showPage("dashboard");
+
+/* ================= MASTER BARANG ================= */
 
 function tambahBarang(){
 let id=Date.now();
@@ -154,11 +159,41 @@ listBarang.innerHTML=html;
 stokAlert.innerHTML=alert;
 });
 
+/* ================= KASIR ================= */
+
 let cartData={};
+let scanner;
+
+function startScanner(){
+if(scanner) return;
+
+scanner = new Html5Qrcode("reader");
+scanner.start(
+{ facingMode: "environment" },
+{ fps: 10, qrbox: 250 },
+barcode => tambahKeranjang(barcode)
+).catch(err=>{
+console.log("Scanner tidak aktif:", err);
+});
+}
+
 function tambahKeranjang(barcode){
+
 db.ref("barang").orderByChild("barcode").equalTo(barcode).once("value",snap=>{
+
+if(!snap.exists()){
+alert("Barang tidak ditemukan");
+return;
+}
+
 snap.forEach(d=>{
 let b=d.val();
+
+if(b.stok<=0){
+alert("Stok habis!");
+return;
+}
+
 if(!cartData[d.key]) cartData[d.key]={...b,qty:0};
 cartData[d.key].qty++;
 renderCart();
@@ -168,27 +203,52 @@ renderCart();
 
 function renderCart(){
 let html="",total=0;
+
 for(let id in cartData){
 let item=cartData[id];
 let sub=item.qty*item.harga;
 total+=sub;
-html+=`<tr><td>${item.nama}</td><td>${item.qty}</td><td>${sub}</td></tr>`;
+
+html+=`<tr>
+<td>${item.nama}</td>
+<td>${item.qty}</td>
+<td>${sub}</td>
+</tr>`;
 }
+
 cart.innerHTML=html;
 document.getElementById("total").innerText=total;
 }
 
 function simpanTransaksi(){
+
+if(Object.keys(cartData).length===0){
+alert("Keranjang kosong!");
+return;
+}
+
 let id=Date.now();
-let total=document.getElementById("total").innerText;
+let total=Number(document.getElementById("total").innerText);
+
 db.ref("transaksi/"+id).set({
 tanggal:new Date().toISOString(),
-total:Number(total)
+total:total
 });
+
+/* KURANGI STOK */
+for(let key in cartData){
+let item=cartData[key];
+db.ref("barang/"+key+"/stok").transaction(stok=>{
+return stok-item.qty;
+});
+}
+
 cartData={};
 renderCart();
-alert("Transaksi tersimpan");
+alert("Transaksi berhasil!");
 }
+
+/* ================= DASHBOARD ================= */
 
 db.ref("transaksi").on("value",snap=>{
 let hariIni=0,bulanIni=0,totalTrx=0;
@@ -199,7 +259,9 @@ let bulan=new Date().toISOString().slice(0,7);
 snap.forEach(d=>{
 let t=d.val();
 let tgl=t.tanggal.slice(0,10);
+
 totalTrx++;
+
 if(tgl===today) hariIni+=t.total;
 if(t.tanggal.slice(0,7)===bulan) bulanIni+=t.total;
 
@@ -209,9 +271,9 @@ dataGrafik[tgl]+=t.total;
 laporan+=`<tr><td>${tgl}</td><td>${t.total}</td></tr>`;
 });
 
-document.getElementById("hariIni").innerText="Rp "+hariIni;
-document.getElementById("bulanIni").innerText="Rp "+bulanIni;
-document.getElementById("totalTransaksi").innerText=totalTrx;
+hariIniEl.innerText="Rp "+hariIni;
+bulanIniEl.innerText="Rp "+bulanIni;
+totalTransaksi.innerText=totalTrx;
 dataLaporan.innerHTML=laporan;
 
 updateChart(dataGrafik);
@@ -236,15 +298,9 @@ borderWidth:2
 }
 });
 }
+</script>
 
-function exportCSV(){
-let csv="Tanggal,Total\n";
-document.querySelectorAll("#dataLaporan tr").forEach(row=>{
-let cols=row.querySelectorAll("td");
-csv+=cols[0].innerText+","+cols[1].innerText+"\n";
-});
-let blob=new Blob([csv],{type:"text/csv"});
-let a=document.createElement("a");
+  let a=document.createElement("a");
 a.href=URL.createObjectURL(blob);
 a.download="laporan.csv";
 a.click();
