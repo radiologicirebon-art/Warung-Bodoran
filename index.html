@@ -1,76 +1,173 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Warung Mas Ade POS</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<title>WARUNG MAS ADE - Semi Minimarket</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+
 <style>
-body{font-family:Inter;background:#eef2f5;margin:0}
-header{background:#1b5e20;color:#fff;padding:14px;text-align:center;font-weight:700;font-size:22px}
-.wrap{display:grid;grid-template-columns:1.4fr .9fr;height:calc(100vh - 60px)}
-.left{padding:14px;overflow:auto}
-.right{background:#fff;padding:14px;border-left:3px solid #ddd;display:flex;flex-direction:column}
-.search{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;font-size:16px;margin-bottom:10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
-.card{background:#fff;border-radius:14px;padding:10px;box-shadow:0 3px 10px rgba(0,0,0,.1);cursor:pointer}
-.price{color:#1b5e20;font-weight:700}
-.table{flex:1;overflow:auto;margin:10px 0}
-.row{display:flex;justify-content:space-between;margin:6px 0}
-.total{font-size:20px;font-weight:700;margin-top:10px}
-button{padding:12px;border:none;border-radius:12px;margin:5px 0;font-weight:700;cursor:pointer}
-.pay{background:#1b5e20;color:#fff}
-.qris{background:#1565c0;color:#fff}
-.hutang{background:#ef6c00;color:#fff}
-.scan{background:#6a1b9a;color:#fff}
-#reader{width:100%;display:none;margin-top:10px}
-input{padding:10px;border-radius:10px;border:1px solid #ccc;width:100%}
+body{font-family:Arial;margin:0;background:#f4f6f9}
+header{background:#2c3e50;color:white;padding:15px;text-align:center;font-size:20px}
+nav{display:flex;gap:10px;padding:10px;background:#34495e}
+nav button{flex:1;padding:10px;border:none;background:#2ecc71;color:white;font-weight:bold;cursor:pointer}
+section{display:none;padding:15px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+table,th,td{border:1px solid #ddd}
+th,td{padding:8px;text-align:left}
+input,select,button{padding:8px;margin:5px 0}
+.card{background:white;padding:15px;margin:10px 0;border-radius:8px}
+.total{font-size:20px;font-weight:bold}
 </style>
 </head>
 <body>
-<header>WARUNG MAS ADE - MODE KASIR</header>
-<div class="wrap">
-<div class="left">
-<input id="search" class="search" placeholder="Ketik nama barang lalu ENTER">
-<button class="scan" onclick="startScan()">Scan Barcode</button>
-<div id="reader"></div>
-<div id="produk" class="grid"></div>
+
+<header>🏪 WARUNG MAS ADE - Semi Minimarket</header>
+
+<nav>
+<button onclick="showPage('dashboard')">Dashboard</button>
+<button onclick="showPage('barang')">Master Barang</button>
+<button onclick="showPage('kasir')">Kasir</button>
+<button onclick="showPage('hutang')">Hutang</button>
+</nav>
+
+<section id="dashboard">
+<div class="card">
+<h3>Total Penjualan Hari Ini</h3>
+<div id="totalHariIni" class="total">Rp 0</div>
 </div>
-<div class="right">
-<input id="customer" placeholder="Nama pelanggan (opsional)">
-<div class="table" id="cart"></div>
-<div class="total" id="total">Rp 0</div>
-<button class="pay" onclick="bayar('Tunai')">Bayar Tunai</button>
-<button class="qris" onclick="bayar('QRIS')">Bayar QRIS</button>
-<button class="hutang" onclick="bayar('Hutang')">Catat Hutang</button>
-<hr>
-<button onclick="tutupKas()">Tutup Kas Hari Ini</button>
-<div id="kas"></div>
-</div>
-</div>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</section>
+
+<section id="barang">
+<h3>Tambah Barang</h3>
+<input id="namaBarang" placeholder="Nama Barang">
+<input id="kategori" placeholder="Kategori">
+<input id="hargaBeli" type="number" placeholder="Harga Beli">
+<input id="hargaJual" type="number" placeholder="Harga Jual">
+<input id="stok" type="number" placeholder="Stok">
+<input id="barcode" placeholder="Barcode">
+<button onclick="tambahBarang()">Simpan</button>
+
+<h3>Daftar Barang</h3>
+<table>
+<thead>
+<tr><th>Nama</th><th>Stok</th><th>Harga</th></tr>
+</thead>
+<tbody id="tabelBarang"></tbody>
+</table>
+</section>
+
+<section id="kasir">
+<h3>Scan Barcode</h3>
+<div id="reader" style="width:300px"></div>
+<h3>Keranjang</h3>
+<table>
+<thead>
+<tr><th>Nama</th><th>Qty</th><th>Subtotal</th></tr>
+</thead>
+<tbody id="keranjang"></tbody>
+</table>
+<div class="total">Total: Rp <span id="total">0</span></div>
+<select id="metode">
+<option>Cash</option>
+<option>Transfer</option>
+<option>Hutang</option>
+</select>
+<button onclick="simpanTransaksi()">Simpan Transaksi</button>
+</section>
+
+<section id="hutang">
+<h3>Data Hutang</h3>
+<table>
+<thead>
+<tr><th>Nama</th><th>Sisa</th><th>Status</th></tr>
+</thead>
+<tbody id="dataHutang"></tbody>
+</table>
+</section>
+
 <script>
-const firebaseConfig={databaseURL:"https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabase.app/"};
+const firebaseConfig = {
+databaseURL: "https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
 firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-let produk={};let cart=[];let scanner;
-const today=new Date().toISOString().slice(0,10);
-function rp(n){return 'Rp '+Number(n).toLocaleString('id-ID')}
-function renderProduk(list){const el=document.getElementById('produk');el.innerHTML='';Object.keys(list).forEach(k=>{const p=list[k];el.innerHTML+=`<div class='card' onclick="add('${k}')"><b>${p.nama}</b><div class='price'>${rp(p.harga)}</div></div>`})}
-function load(){db.ref('produk').on('value',s=>{produk=s.val()||{};renderProduk(produk)})}
-function add(id){const p=produk[id];if(!p)return;const e=cart.find(i=>i.id==id);if(e)e.qty++;else cart.push({id,nama:p.nama,harga:p.harga,qty:1});draw()}
-function draw(){const el=document.getElementById('cart');let t=0;el.innerHTML='';cart.forEach(i=>{t+=i.qty*i.harga;el.innerHTML+=`<div class='row'><span>${i.nama} x${i.qty}</span><span>${rp(i.qty*i.harga)}</span></div>`});document.getElementById('total').innerText=rp(t)}
-document.getElementById('search').addEventListener('keyup',e=>{if(e.key==='Enter'){const q=e.target.value.toLowerCase();const f=Object.fromEntries(Object.entries(produk).filter(([k,v])=>v.nama.toLowerCase().includes(q)));renderProduk(f);}})
-function bayar(metode){if(cart.length==0)return;let total=0;cart.forEach(i=>total+=i.qty*i.harga);const nama=document.getElementById('customer').value||'UMUM';
-db.ref('transaksi/'+today).push({nama,metode,total,cart,waktu:Date.now()});
-cart.forEach(i=>db.ref('produk/'+i.id+'/stok').transaction(s=>(s||0)-i.qty));
-if(metode==='Hutang')db.ref('hutang/'+nama).transaction(v=>(v||0)+total);
-alert('Transaksi tersimpan');cart=[];draw();}
-function tutupKas(){db.ref('transaksi/'+today).once('value').then(s=>{let t=0,c=0;s.forEach(d=>{t+=d.val().total;c++});document.getElementById('kas').innerHTML=`Transaksi: ${c}<br>Omzet: ${rp(t)}`})}
-function startScan(){document.getElementById('reader').style.display='block';scanner=new Html5Qrcode("reader");scanner.start({facingMode:"environment"},{fps:10,qrbox:250},code=>{handleBarcode(code);scanner.stop();document.getElementById('reader').style.display='none'});} 
-function handleBarcode(code){const item=Object.entries(produk).find(([k,v])=>String(v.barcode)===String(code));if(item)add(item[0]);else alert('Barcode tidak terdaftar');}
-load();
+const db = firebase.database();
+
+function showPage(id){
+document.querySelectorAll("section").forEach(s=>s.style.display="none");
+document.getElementById(id).style.display="block";
+}
+showPage('dashboard');
+
+function tambahBarang(){
+const id = Date.now();
+db.ref("barang/"+id).set({
+nama: namaBarang.value,
+kategori: kategori.value,
+hargaBeli: Number(hargaBeli.value),
+hargaJual: Number(hargaJual.value),
+stok: Number(stok.value),
+barcode: barcode.value
+});
+alert("Barang disimpan");
+}
+
+db.ref("barang").on("value", snap=>{
+let html="";
+snap.forEach(data=>{
+let b=data.val();
+html+=`<tr><td>${b.nama}</td><td>${b.stok}</td><td>${b.hargaJual}</td></tr>`;
+});
+tabelBarang.innerHTML=html;
+});
+
+let cart={};
+function tambahKeKeranjang(barcode){
+db.ref("barang").orderByChild("barcode").equalTo(barcode).once("value",snap=>{
+snap.forEach(d=>{
+let b=d.val();
+if(!cart[d.key]) cart[d.key]={...b,qty:0};
+cart[d.key].qty++;
+renderCart();
+});
+});
+}
+
+function renderCart(){
+let html="";
+let total=0;
+for(let id in cart){
+let item=cart[id];
+let sub=item.qty*item.hargaJual;
+total+=sub;
+html+=`<tr><td>${item.nama}</td><td>${item.qty}</td><td>${sub}</td></tr>`;
+}
+keranjang.innerHTML=html;
+document.getElementById("total").innerText=total;
+}
+
+function simpanTransaksi(){
+let id=Date.now();
+let total=document.getElementById("total").innerText;
+db.ref("transaksi/"+id).set({
+tanggal:new Date().toLocaleDateString(),
+total:Number(total),
+metode:metode.value,
+items:cart
+});
+alert("Transaksi disimpan");
+cart={};
+renderCart();
+}
+
+const scanner = new Html5Qrcode("reader");
+scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+barcode => tambahKeKeranjang(barcode));
 </script>
+
 </body>
 </html>
