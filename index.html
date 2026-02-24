@@ -9,17 +9,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WARUNG MAS ADE - POS V3 BISNIS SERIUS</title>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 *{box-sizing:border-box;font-family:'Segoe UI',sans-serif}
 body{margin:0;background:#f1f5f9;color:#1e293b}
@@ -44,6 +33,7 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 .item-list div:hover{background:#10b981;color:white}
 </style>
 </head>
+
 <body>
 
 <!-- LOGIN -->
@@ -68,7 +58,6 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 <button onclick="showPage('kasir')">Kasir</button>
 </nav>
 
-<!-- DASHBOARD -->
 <section id="dashboard">
 <div class="card">
 <h3>Laporan Hari Ini</h3>
@@ -80,7 +69,6 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 <canvas id="grafik"></canvas>
 </section>
 
-<!-- MASTER BARANG -->
 <section id="barang">
 <div class="card">
 <h3>Tambah Barang</h3>
@@ -101,7 +89,6 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 </div>
 </section>
 
-<!-- KASIR -->
 <section id="kasir">
 <div class="card">
 <h3>Scan / Cari</h3>
