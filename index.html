@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WARUNG MAS ADE PRO MAX</title>
+<title>WARUNG MAS ADE - ULTRA PRO MAX POS</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -17,9 +17,13 @@ nav button{flex:1;padding:10px;border:none;background:#10b981;color:white;border
 section{display:none;padding:12px}
 .card{background:white;padding:12px;margin-bottom:12px;border-radius:10px}
 input{width:100%;padding:8px;margin:5px 0}
+button{padding:8px;margin-top:5px}
 .login-box{max-width:350px;margin:80px auto;background:white;padding:20px;border-radius:12px}
 .logout{background:red !important}
 .hidden{display:none !important}
+.item-list div{padding:8px;border-bottom:1px solid #ddd;cursor:pointer}
+.item-list div:hover{background:#f3f4f6}
+.total{font-size:18px;font-weight:bold}
 </style>
 </head>
 <body>
@@ -35,8 +39,9 @@ input{width:100%;padding:8px;margin:5px 0}
 
 <!-- APP -->
 <div id="app" style="display:none">
+
 <header>
-🏪 WARUNG MAS ADE
+🏪 WARUNG MAS ADE - ULTRA PRO MAX
 <button onclick="logout()" class="logout">Logout</button>
 </header>
 
@@ -46,6 +51,7 @@ input{width:100%;padding:8px;margin:5px 0}
 <button onclick="showPage('kasir')">Kasir</button>
 </nav>
 
+<!-- DASHBOARD -->
 <section id="dashboard">
 <div class="card">
 <h3>Total Penjualan</h3>
@@ -54,6 +60,7 @@ input{width:100%;padding:8px;margin:5px 0}
 <canvas id="grafik"></canvas>
 </section>
 
+<!-- MASTER BARANG -->
 <section id="barang">
 <div class="card">
 <h3>Tambah Barang</h3>
@@ -63,27 +70,47 @@ input{width:100%;padding:8px;margin:5px 0}
 <input id="barcode" placeholder="Barcode">
 <button onclick="tambahBarang()">Simpan</button>
 </div>
+
 <div class="card">
 <table width="100%">
-<thead><tr><th>Nama</th><th>Stok</th></tr></thead>
+<thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead>
 <tbody id="listBarang"></tbody>
 </table>
 </div>
 </section>
 
+<!-- KASIR -->
 <section id="kasir">
+
 <div class="card">
+<h3>Scan / Cari Barang</h3>
+
 <input id="scanManual" placeholder="Scan Barcode">
-<button onclick="scanManualBarcode()">Tambah</button>
+<button onclick="scanManualBarcode()">Scan</button>
+
+<input id="cariBarang" placeholder="Cari nama barang..." onkeyup="filterBarang()">
+<div id="hasilCari" class="item-list"></div>
 </div>
+
 <div class="card">
 <table width="100%">
-<thead><tr><th>Nama</th><th>Qty</th></tr></thead>
+<thead>
+<tr><th>Nama</th><th>Qty</th><th>Subtotal</th><th>Hapus</th></tr>
+</thead>
 <tbody id="cart"></tbody>
 </table>
-<div>Total: Rp <span id="total">0</span></div>
-<button onclick="simpanTransaksi()">Simpan</button>
+
+<div class="total">Total: Rp <span id="total">0</span></div>
+
+<h4>Pembayaran</h4>
+<input id="bayar" type="number" placeholder="Jumlah Bayar" oninput="hitungKembalian()">
+<div>Kembalian: Rp <span id="kembalian">0</span></div>
+
+<button onclick="simpanTransaksi()">Simpan Transaksi</button>
+<button onclick="connectPrinter()">Connect Printer</button>
+<button onclick="cetakStruk()">Cetak Struk</button>
 </div>
+
 </section>
 </div>
 
@@ -93,21 +120,15 @@ databaseURL:"https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabas
 });
 const db=firebase.database();
 
-/* ================= SESSION CHECK ================= */
-
+/* ================= SESSION ================= */
 window.onload=function(){
 let session=localStorage.getItem("user");
-if(session){
-initApp(JSON.parse(session));
-}
+if(session){initApp(JSON.parse(session));}
 };
-
-/* ================= LOGIN ================= */
 
 function login(){
 db.ref("users").once("value",snap=>{
 let found=false;
-
 snap.forEach(d=>{
 let u=d.val();
 if(u.username===username.value && u.password===password.value){
@@ -116,10 +137,7 @@ localStorage.setItem("user",JSON.stringify(u));
 initApp(u);
 }
 });
-
-if(!found){
-loginError.innerText="Login gagal!";
-}
+if(!found){loginError.innerText="Login gagal";}
 });
 }
 
@@ -127,23 +145,15 @@ function initApp(user){
 loginPage.style.display="none";
 app.style.display="block";
 showPage("dashboard");
-
-/* Role Control */
-if(user.role==="kasir"){
-menuBarang.classList.add("hidden");
-}else{
-menuBarang.classList.remove("hidden");
+if(user.role==="kasir"){menuBarang.classList.add("hidden");}
 }
-}
-
-/* ================= LOGOUT ================= */
 
 function logout(){
 localStorage.removeItem("user");
+history.pushState(null,null,location.href);
+window.onpopstate=function(){history.go(1);}
 location.reload();
 }
-
-/* ================= NAV ================= */
 
 function showPage(id){
 document.querySelectorAll("section").forEach(s=>s.style.display="none");
@@ -151,7 +161,6 @@ document.getElementById(id).style.display="block";
 }
 
 /* ================= MASTER BARANG ================= */
-
 function tambahBarang(){
 let id=Date.now();
 db.ref("barang/"+id).set({
@@ -163,50 +172,98 @@ barcode:barcode.value
 alert("Barang disimpan");
 }
 
+let semuaBarang={};
+
 db.ref("barang").on("value",snap=>{
+semuaBarang={};
 let html="";
 snap.forEach(d=>{
 let b=d.val();
-html+=`<tr><td>${b.nama}</td><td>${b.stok}</td></tr>`;
+semuaBarang[d.key]=b;
+html+=`<tr><td>${b.nama}</td><td>${b.stok}</td><td>${b.harga}</td></tr>`;
 });
 listBarang.innerHTML=html;
 });
 
 /* ================= KASIR ================= */
-
 let cartData={};
 
 function scanManualBarcode(){
 let code=scanManual.value;
 db.ref("barang").orderByChild("barcode").equalTo(code).once("value",snap=>{
-if(!snap.exists()){alert("Tidak ditemukan");return;}
-snap.forEach(d=>{
-let b=d.val();
-if(!cartData[d.key]) cartData[d.key]={...b,qty:0};
-cartData[d.key].qty++;
+if(!snap.exists()){alert("Barang tidak ditemukan");return;}
+snap.forEach(d=>{tambahKeKeranjang(d.key,d.val());});
+});
+scanManual.value="";
+}
+
+function filterBarang(){
+let keyword=cariBarang.value.toLowerCase();
+let html="";
+for(let id in semuaBarang){
+let b=semuaBarang[id];
+if(b.nama.toLowerCase().includes(keyword)){
+html+=`<div onclick="tambahDariKlik('${id}')">${b.nama} - Rp ${b.harga}</div>`;
+}
+}
+hasilCari.innerHTML=html;
+}
+
+function tambahDariKlik(id){
+tambahKeKeranjang(id,semuaBarang[id]);
+hasilCari.innerHTML="";
+cariBarang.value="";
+}
+
+function tambahKeKeranjang(id,b){
+if(b.stok<=0){alert("Stok habis");return;}
+if(!cartData[id]) cartData[id]={...b,qty:0};
+cartData[id].qty++;
 renderCart();
-});
-});
 }
 
 function renderCart(){
 let html="",total=0;
 for(let id in cartData){
 let item=cartData[id];
-total+=item.qty*item.harga;
-html+=`<tr><td>${item.nama}</td><td>${item.qty}</td></tr>`;
+let sub=item.qty*item.harga;
+total+=sub;
+html+=`<tr>
+<td>${item.nama}</td>
+<td>${item.qty}</td>
+<td>${sub}</td>
+<td><button onclick="hapusItem('${id}')">X</button></td>
+</tr>`;
 }
 cart.innerHTML=html;
 document.getElementById("total").innerText=total;
+hitungKembalian();
+}
+
+function hapusItem(id){
+delete cartData[id];
+renderCart();
+}
+
+function hitungKembalian(){
+let total=Number(document.getElementById("total").innerText);
+let bayarVal=Number(bayar.value);
+let kembali=bayarVal-total;
+document.getElementById("kembalian").innerText=kembali>0?kembali:0;
 }
 
 function simpanTransaksi(){
-let id=Date.now();
 let total=Number(document.getElementById("total").innerText);
+let bayarVal=Number(bayar.value);
 
+if(total===0){alert("Keranjang kosong");return;}
+if(bayarVal<total){alert("Uang kurang!");return;}
+
+let id=Date.now();
 db.ref("transaksi/"+id).set({
 tanggal:new Date().toISOString(),
-total:total
+total:total,
+detail:cartData
 });
 
 for(let key in cartData){
@@ -214,17 +271,18 @@ let item=cartData[key];
 db.ref("barang/"+key+"/stok").transaction(s=>s-item.qty);
 }
 
+alert("Transaksi berhasil");
+cetakStruk();
+
 cartData={};
 renderCart();
-alert("Transaksi sukses");
+bayar.value="";
 }
 
 /* ================= DASHBOARD ================= */
-
 let chart;
 db.ref("transaksi").on("value",snap=>{
 let total=0,data={};
-
 snap.forEach(d=>{
 let t=d.val();
 total+=t.total;
@@ -232,7 +290,6 @@ let tgl=t.tanggal.slice(0,10);
 if(!data[tgl]) data[tgl]=0;
 data[tgl]+=t.total;
 });
-
 totalPenjualan.innerText="Rp "+total;
 updateChart(data);
 });
@@ -248,7 +305,50 @@ datasets:[{label:"Penjualan",data:Object.values(data)}]
 }
 });
 }
-</script>
 
+/* ================= BLUETOOTH PRINTER ================= */
+let printerDevice;
+let printerCharacteristic;
+
+async function connectPrinter(){
+try{
+printerDevice=await navigator.bluetooth.requestDevice({
+acceptAllDevices:true,
+optionalServices:[0xFFE0]
+});
+const server=await printerDevice.gatt.connect();
+const service=await server.getPrimaryService(0xFFE0);
+printerCharacteristic=await service.getCharacteristic(0xFFE1);
+alert("Printer Connected");
+}catch(e){alert("Gagal koneksi printer");}
+}
+
+function textToUint8(text){
+return new TextEncoder().encode(text);
+}
+
+async function cetakStruk(){
+if(!printerCharacteristic){return;}
+let total=document.getElementById("total").innerText;
+let bayarVal=bayar.value;
+let kembali=document.getElementById("kembalian").innerText;
+
+let struk="WARUNG MAS ADE\n";
+struk+="====================\n";
+for(let id in cartData){
+let item=cartData[id];
+struk+=item.nama+"\n";
+struk+=item.qty+" x "+item.harga+"\n";
+}
+struk+="--------------------\n";
+struk+="TOTAL: "+total+"\n";
+struk+="BAYAR: "+bayarVal+"\n";
+struk+="KEMBALI: "+kembali+"\n";
+struk+="====================\n";
+struk+="Terima Kasih\n\n\n";
+
+await printerCharacteristic.writeValue(textToUint8(struk));
+}
+</script>
 </body>
 </html>
