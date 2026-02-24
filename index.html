@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WARUNG MAS ADE - POS V3 BISNIS SERIUS</title>
 
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- CHART -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -36,7 +39,7 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 
 <body>
 
-<!-- LOGIN -->
+<!-- ================= LOGIN ================= -->
 <div id="loginPage" class="login-box">
 <h3>Login Sistem</h3>
 <input id="username" placeholder="Username">
@@ -45,6 +48,7 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 <p id="loginError" style="color:red"></p>
 </div>
 
+<!-- ================= APP ================= -->
 <div id="app" style="display:none">
 
 <header>
@@ -58,6 +62,7 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 <button onclick="showPage('kasir')">Kasir</button>
 </nav>
 
+<!-- ================= DASHBOARD ================= -->
 <section id="dashboard">
 <div class="card">
 <h3>Laporan Hari Ini</h3>
@@ -69,6 +74,7 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 <canvas id="grafik"></canvas>
 </section>
 
+<!-- ================= MASTER BARANG ================= -->
 <section id="barang">
 <div class="card">
 <h3>Tambah Barang</h3>
@@ -83,12 +89,19 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 
 <div class="card">
 <table>
-<thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead>
+<thead>
+<tr>
+<th>Nama</th>
+<th>Stok</th>
+<th>Harga</th>
+</tr>
+</thead>
 <tbody id="listBarang"></tbody>
 </table>
 </div>
 </section>
 
+<!-- ================= KASIR ================= -->
 <section id="kasir">
 <div class="card">
 <h3>Scan / Cari</h3>
@@ -100,11 +113,20 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 
 <div class="card">
 <table>
-<thead><tr><th>Nama</th><th>Qty</th><th>Subtotal</th><th>X</th></tr></thead>
+<thead>
+<tr>
+<th>Nama</th>
+<th>Qty</th>
+<th>Subtotal</th>
+<th>X</th>
+</tr>
+</thead>
 <tbody id="cart"></tbody>
 </table>
 
-<div class="total">Total: Rp <span id="total">0</span></div>
+<div class="total">
+Total: Rp <span id="total">0</span>
+</div>
 
 <select id="metodeBayar">
 <option>Cash</option>
@@ -122,13 +144,18 @@ th,td{padding:8px;border-bottom:1px solid #e2e8f0}
 
 </div>
 
+<!-- ================= SCRIPT ================= -->
 <script>
+
 firebase.initializeApp({
 databaseURL:"https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabase.app/"
 });
+
 const db=firebase.database();
 
-function rupiah(a){return new Intl.NumberFormat("id-ID").format(a)}
+function rupiah(a){
+return new Intl.NumberFormat("id-ID").format(a)
+}
 
 window.onload=function(){
 let s=localStorage.getItem("user");
@@ -157,8 +184,15 @@ showPage("dashboard");
 if(user.role==="kasir") menuBarang.classList.add("hidden");
 }
 
-function logout(){localStorage.clear();location.reload();}
-function showPage(id){document.querySelectorAll("section").forEach(s=>s.style.display="none");document.getElementById(id).style.display="block"}
+function logout(){
+localStorage.clear();
+location.reload();
+}
+
+function showPage(id){
+document.querySelectorAll("section").forEach(s=>s.style.display="none");
+document.getElementById(id).style.display="block"
+}
 
 function tambahBarang(){
 let id=Date.now();
@@ -175,14 +209,19 @@ alert("Barang disimpan");
 }
 
 let semuaBarang={};
+
 db.ref("barang").on("value",snap=>{
 semuaBarang={};
 let html="";
 snap.forEach(d=>{
 let b=d.val();
 semuaBarang[d.key]=b;
-let warn=b.stok<= (b.stok_minimum||0)?"class='stok-warning'":"";
-html+=`<tr ${warn}><td>${b.nama}</td><td>${b.stok}</td><td>Rp ${rupiah(b.harga)}</td></tr>`;
+let warn=b.stok<=(b.stok_minimum||0)?"class='stok-warning'":"";
+html+=`<tr ${warn}>
+<td>${b.nama}</td>
+<td>${b.stok}</td>
+<td>Rp ${rupiah(b.harga)}</td>
+</tr>`;
 });
 listBarang.innerHTML=html;
 });
@@ -204,7 +243,9 @@ let html="";
 for(let id in semuaBarang){
 let b=semuaBarang[id];
 if(b.nama.toLowerCase().includes(k)){
-html+=`<div onclick="tambahDariKlik('${id}')">${b.nama} - Rp ${rupiah(b.harga)}</div>`;
+html+=`<div onclick="tambahDariKlik('${id}')">
+${b.nama} - Rp ${rupiah(b.harga)}
+</div>`;
 }
 }
 hasilCari.innerHTML=html;
@@ -212,7 +253,8 @@ hasilCari.innerHTML=html;
 
 function tambahDariKlik(id){
 tambahKeKeranjang(id,semuaBarang[id]);
-hasilCari.innerHTML="";cariBarang.value="";
+hasilCari.innerHTML="";
+cariBarang.value="";
 }
 
 function tambahKeKeranjang(id,b){
@@ -228,18 +270,28 @@ for(let id in cartData){
 let i=cartData[id];
 let sub=i.qty*i.harga;
 total+=sub;
-html+=`<tr><td>${i.nama}</td><td>${i.qty}</td><td>${rupiah(sub)}</td><td><button onclick="hapusItem('${id}')">X</button></td></tr>`;
+html+=`<tr>
+<td>${i.nama}</td>
+<td>${i.qty}</td>
+<td>${rupiah(sub)}</td>
+<td><button onclick="hapusItem('${id}')">X</button></td>
+</tr>`;
 }
 cart.innerHTML=html;
 document.getElementById("total").innerText=rupiah(total);
 hitungKembalian();
 }
 
-function hapusItem(id){delete cartData[id];renderCart();}
+function hapusItem(id){
+delete cartData[id];
+renderCart();
+}
 
 function hitungKembalian(){
 let totalRaw=0;
-for(let id in cartData){totalRaw+=cartData[id].qty*cartData[id].harga;}
+for(let id in cartData){
+totalRaw+=cartData[id].qty*cartData[id].harga;
+}
 let bayarVal=Number(bayar.value||0);
 let kembali=bayarVal-totalRaw;
 kembalian.innerText=rupiah(kembali>0?kembali:0);
@@ -249,7 +301,9 @@ async function generateNoTrx(){
 let today=new Date().toISOString().slice(0,10);
 let snap=await db.ref("transaksi").once("value");
 let count=0;
-snap.forEach(d=>{if(d.val().tanggal?.startsWith(today)) count++});
+snap.forEach(d=>{
+if(d.val().tanggal?.startsWith(today)) count++
+});
 return "TRX-"+today.replaceAll("-","")+"-"+String(count+1).padStart(3,"0");
 }
 
@@ -262,6 +316,7 @@ else return;
 
 async function simpanTransaksi(){
 let totalRaw=0,laba=0;
+
 for(let id in cartData){
 let i=cartData[id];
 totalRaw+=i.qty*i.harga;
@@ -291,6 +346,7 @@ detail:cartData
 });
 
 alert("Berhasil\n"+noTrx);
+
 cartData={};
 renderCart();
 bayar.value="";
@@ -299,7 +355,9 @@ bayar.value="";
 async function laporanHariIni(){
 let today=new Date().toISOString().slice(0,10);
 let snap=await db.ref("transaksi").once("value");
+
 let total=0,laba=0,jumlah=0,data={};
+
 snap.forEach(d=>{
 let t=d.val();
 if(t.tanggal?.startsWith(today)){
@@ -311,16 +369,24 @@ let tgl=t.tanggal.slice(0,10);
 if(!data[tgl]) data[tgl]=0;
 data[tgl]+=t.total;
 });
+
 totalHariIni.innerText="Rp "+rupiah(total);
 labaHariIni.innerText="Rp "+rupiah(laba);
 jumlahHariIni.innerText=jumlah;
+
 updateChart(data);
 }
 
 function updateChart(data){
 new Chart(document.getElementById("grafik"),{
 type:"line",
-data:{labels:Object.keys(data),datasets:[{label:"Penjualan",data:Object.values(data)}]}
+data:{
+labels:Object.keys(data),
+datasets:[{
+label:"Penjualan",
+data:Object.values(data)
+}]
+}
 });
 }
 
@@ -328,327 +394,24 @@ db.ref("transaksi").on("value",()=>laporanHariIni());
 
 async function exportCSV(){
 let snap=await db.ref("transaksi").once("value");
+
 let csv="NoTrx,Tanggal,Kasir,Metode,Total,Laba\n";
+
 snap.forEach(d=>{
 let t=d.val();
 csv+=`${t.no_transaksi},${t.tanggal},${t.kasir},${t.metode},${t.total},${t.laba_kotor}\n`;
 });
+
 let blob=new Blob([csv],{type:"text/csv"});
 let url=URL.createObjectURL(blob);
 let a=document.createElement("a");
-a.href=url;a.download="laporan.csv";a.click();
+
+a.href=url;
+a.download="laporan.csv";
+a.click();
 }
+
 </script>
-</body>
-</html>
-</head>
-<body>
 
-<!-- LOGIN -->
-<div id="loginPage" class="login-box">
-<h3>Login Sistem</h3>
-<input id="username" placeholder="Username">
-<input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<p id="loginError" style="color:red"></p>
-</div>
-
-<div id="app" style="display:none">
-
-<header>
-🏪 WARUNG MAS ADE - V3
-<button onclick="logout()" class="logout">Logout</button>
-</header>
-
-<nav>
-<button onclick="showPage('dashboard')">Dashboard</button>
-<button onclick="showPage('barang')" id="menuBarang">Master Barang</button>
-<button onclick="showPage('kasir')">Kasir</button>
-</nav>
-
-<!-- DASHBOARD -->
-<section id="dashboard">
-<div class="card">
-<h3>Laporan Hari Ini</h3>
-<div>Total: <b id="totalHariIni">Rp 0</b></div>
-<div>Laba: <b id="labaHariIni">Rp 0</b></div>
-<div>Jumlah Transaksi: <b id="jumlahHariIni">0</b></div>
-<button onclick="exportCSV()">Export CSV</button>
-</div>
-<canvas id="grafik"></canvas>
-</section>
-
-<!-- MASTER BARANG -->
-<section id="barang">
-<div class="card">
-<h3>Tambah Barang</h3>
-<input id="nama" placeholder="Nama">
-<input id="harga" type="number" placeholder="Harga Jual">
-<input id="harga_beli" type="number" placeholder="Harga Beli">
-<input id="stok" type="number" placeholder="Stok">
-<input id="stok_minimum" type="number" placeholder="Stok Minimum">
-<input id="barcode" placeholder="Barcode">
-<button onclick="tambahBarang()">Simpan</button>
-</div>
-
-<div class="card">
-<table>
-<thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead>
-<tbody id="listBarang"></tbody>
-</table>
-</div>
-</section>
-
-<!-- KASIR -->
-<section id="kasir">
-<div class="card">
-<h3>Scan / Cari</h3>
-<input id="scanManual" placeholder="Scan Barcode">
-<button onclick="scanManualBarcode()">Scan</button>
-<input id="cariBarang" placeholder="Cari nama..." onkeyup="filterBarang()">
-<div id="hasilCari" class="item-list"></div>
-</div>
-
-<div class="card">
-<table>
-<thead><tr><th>Nama</th><th>Qty</th><th>Subtotal</th><th>X</th></tr></thead>
-<tbody id="cart"></tbody>
-</table>
-
-<div class="total">Total: Rp <span id="total">0</span></div>
-
-<select id="metodeBayar">
-<option>Cash</option>
-<option>QRIS</option>
-<option>Transfer</option>
-<option>E-Wallet</option>
-</select>
-
-<input id="bayar" type="number" placeholder="Jumlah Bayar" oninput="hitungKembalian()">
-<div>Kembalian: Rp <span id="kembalian">0</span></div>
-
-<button onclick="simpanTransaksi()">Simpan Transaksi</button>
-</div>
-</section>
-
-</div>
-
-<script>
-firebase.initializeApp({
-databaseURL:"https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabase.app/"
-});
-const db=firebase.database();
-
-function rupiah(a){return new Intl.NumberFormat("id-ID").format(a)}
-
-window.onload=function(){
-let s=localStorage.getItem("user");
-if(s){initApp(JSON.parse(s))}
-}
-
-function login(){
-db.ref("users").once("value",snap=>{
-let found=false;
-snap.forEach(d=>{
-let u=d.val();
-if(u.username===username.value && u.password===password.value){
-found=true;
-localStorage.setItem("user",JSON.stringify(u));
-initApp(u);
-}
-});
-if(!found) loginError.innerText="Login gagal";
-});
-}
-
-function initApp(user){
-loginPage.style.display="none";
-app.style.display="block";
-showPage("dashboard");
-if(user.role==="kasir") menuBarang.classList.add("hidden");
-}
-
-function logout(){localStorage.clear();location.reload();}
-function showPage(id){document.querySelectorAll("section").forEach(s=>s.style.display="none");document.getElementById(id).style.display="block"}
-
-function tambahBarang(){
-let id=Date.now();
-db.ref("barang/"+id).set({
-nama:nama.value,
-harga:Number(harga.value),
-harga_beli:Number(harga_beli.value||0),
-stok:Number(stok.value),
-stok_minimum:Number(stok_minimum.value||0),
-barcode:barcode.value,
-created_at:new Date().toISOString()
-});
-alert("Barang disimpan");
-}
-
-let semuaBarang={};
-db.ref("barang").on("value",snap=>{
-semuaBarang={};
-let html="";
-snap.forEach(d=>{
-let b=d.val();
-semuaBarang[d.key]=b;
-let warn=b.stok<= (b.stok_minimum||0)?"class='stok-warning'":"";
-html+=`<tr ${warn}><td>${b.nama}</td><td>${b.stok}</td><td>Rp ${rupiah(b.harga)}</td></tr>`;
-});
-listBarang.innerHTML=html;
-});
-
-let cartData={};
-
-function scanManualBarcode(){
-let code=scanManual.value;
-db.ref("barang").orderByChild("barcode").equalTo(code).once("value",snap=>{
-if(!snap.exists()){alert("Tidak ditemukan");return;}
-snap.forEach(d=>tambahKeKeranjang(d.key,d.val()));
-});
-scanManual.value="";
-}
-
-function filterBarang(){
-let k=cariBarang.value.toLowerCase();
-let html="";
-for(let id in semuaBarang){
-let b=semuaBarang[id];
-if(b.nama.toLowerCase().includes(k)){
-html+=`<div onclick="tambahDariKlik('${id}')">${b.nama} - Rp ${rupiah(b.harga)}</div>`;
-}
-}
-hasilCari.innerHTML=html;
-}
-
-function tambahDariKlik(id){
-tambahKeKeranjang(id,semuaBarang[id]);
-hasilCari.innerHTML="";cariBarang.value="";
-}
-
-function tambahKeKeranjang(id,b){
-if(b.stok<=0){alert("Stok habis");return;}
-if(!cartData[id]) cartData[id]={...b,qty:0};
-cartData[id].qty++;
-renderCart();
-}
-
-function renderCart(){
-let html="",total=0;
-for(let id in cartData){
-let i=cartData[id];
-let sub=i.qty*i.harga;
-total+=sub;
-html+=`<tr><td>${i.nama}</td><td>${i.qty}</td><td>${rupiah(sub)}</td><td><button onclick="hapusItem('${id}')">X</button></td></tr>`;
-}
-cart.innerHTML=html;
-document.getElementById("total").innerText=rupiah(total);
-hitungKembalian();
-}
-
-function hapusItem(id){delete cartData[id];renderCart();}
-
-function hitungKembalian(){
-let totalRaw=0;
-for(let id in cartData){totalRaw+=cartData[id].qty*cartData[id].harga;}
-let bayarVal=Number(bayar.value||0);
-let kembali=bayarVal-totalRaw;
-kembalian.innerText=rupiah(kembali>0?kembali:0);
-}
-
-async function generateNoTrx(){
-let today=new Date().toISOString().slice(0,10);
-let snap=await db.ref("transaksi").once("value");
-let count=0;
-snap.forEach(d=>{if(d.val().tanggal?.startsWith(today)) count++});
-return "TRX-"+today.replaceAll("-","")+"-"+String(count+1).padStart(3,"0");
-}
-
-async function kurangiStok(key,qty){
-return db.ref("barang/"+key+"/stok").transaction(s=>{
-if(s>=qty) return s-qty;
-else return;
-});
-}
-
-async function simpanTransaksi(){
-let totalRaw=0,laba=0;
-for(let id in cartData){
-let i=cartData[id];
-totalRaw+=i.qty*i.harga;
-laba+=(i.harga-(i.harga_beli||0))*i.qty;
-}
-
-if(totalRaw===0){alert("Keranjang kosong");return;}
-if(Number(bayar.value)<totalRaw){alert("Uang kurang");return;}
-
-let noTrx=await generateNoTrx();
-let user=JSON.parse(localStorage.getItem("user"));
-
-for(let id in cartData){
-await kurangiStok(id,cartData[id].qty);
-}
-
-await db.ref("transaksi/"+Date.now()).set({
-no_transaksi:noTrx,
-tanggal:new Date().toISOString(),
-kasir:user.username,
-metode:metodeBayar.value,
-total:totalRaw,
-bayar:Number(bayar.value),
-kembali:Number(bayar.value)-totalRaw,
-laba_kotor:laba,
-detail:cartData
-});
-
-alert("Berhasil\n"+noTrx);
-cartData={};
-renderCart();
-bayar.value="";
-}
-
-async function laporanHariIni(){
-let today=new Date().toISOString().slice(0,10);
-let snap=await db.ref("transaksi").once("value");
-let total=0,laba=0,jumlah=0,data={};
-snap.forEach(d=>{
-let t=d.val();
-if(t.tanggal?.startsWith(today)){
-total+=t.total;
-laba+=t.laba_kotor||0;
-jumlah++;
-}
-let tgl=t.tanggal.slice(0,10);
-if(!data[tgl]) data[tgl]=0;
-data[tgl]+=t.total;
-});
-totalHariIni.innerText="Rp "+rupiah(total);
-labaHariIni.innerText="Rp "+rupiah(laba);
-jumlahHariIni.innerText=jumlah;
-updateChart(data);
-}
-
-function updateChart(data){
-new Chart(document.getElementById("grafik"),{
-type:"line",
-data:{labels:Object.keys(data),datasets:[{label:"Penjualan",data:Object.values(data)}]}
-});
-}
-
-db.ref("transaksi").on("value",()=>laporanHariIni());
-
-async function exportCSV(){
-let snap=await db.ref("transaksi").once("value");
-let csv="NoTrx,Tanggal,Kasir,Metode,Total,Laba\n";
-snap.forEach(d=>{
-let t=d.val();
-csv+=`${t.no_transaksi},${t.tanggal},${t.kasir},${t.metode},${t.total},${t.laba_kotor}\n`;
-});
-let blob=new Blob([csv],{type:"text/csv"});
-let url=URL.createObjectURL(blob);
-let a=document.createElement("a");
-a.href=url;a.download="laporan.csv";a.click();
-}
-</script>
 </body>
 </html>
