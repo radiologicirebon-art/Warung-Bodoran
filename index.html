@@ -35,21 +35,11 @@ th,td{border:1px solid #ddd;padding:8px;text-align:left}
 <button onclick="showPage('laporan')">Laporan</button>
 </nav>
 
-<!-- DASHBOARD -->
 <section id="dashboard">
 <div class="grid">
-<div class="card">
-<h3>Penjualan Hari Ini</h3>
-<div id="hariIni" class="total">Rp 0</div>
-</div>
-<div class="card">
-<h3>Penjualan Bulan Ini</h3>
-<div id="bulanIni" class="total">Rp 0</div>
-</div>
-<div class="card">
-<h3>Total Transaksi</h3>
-<div id="totalTransaksi" class="total">0</div>
-</div>
+<div class="card"><h3>Penjualan Hari Ini</h3><div id="hariIni" class="total">Rp 0</div></div>
+<div class="card"><h3>Penjualan Bulan Ini</h3><div id="bulanIni" class="total">Rp 0</div></div>
+<div class="card"><h3>Total Transaksi</h3><div id="totalTransaksi" class="total">0</div></div>
 </div>
 
 <div class="card">
@@ -63,7 +53,6 @@ th,td{border:1px solid #ddd;padding:8px;text-align:left}
 </div>
 </section>
 
-<!-- MASTER BARANG -->
 <section id="barang">
 <div class="card">
 <h3>Tambah Barang</h3>
@@ -78,23 +67,18 @@ th,td{border:1px solid #ddd;padding:8px;text-align:left}
 <div class="card">
 <h3>Daftar Barang</h3>
 <table>
-<thead>
-<tr><th>Nama</th><th>Stok</th><th>Harga</th></tr>
-</thead>
+<thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead>
 <tbody id="listBarang"></tbody>
 </table>
 </div>
 </section>
 
-<!-- KASIR -->
 <section id="kasir">
 <div id="reader" style="width:300px"></div>
 <div class="card">
 <h3>Keranjang</h3>
 <table>
-<thead>
-<tr><th>Nama</th><th>Qty</th><th>Subtotal</th></tr>
-</thead>
+<thead><tr><th>Nama</th><th>Qty</th><th>Subtotal</th></tr></thead>
 <tbody id="cart"></tbody>
 </table>
 <div class="total">Total: Rp <span id="total">0</span></div>
@@ -102,15 +86,11 @@ th,td{border:1px solid #ddd;padding:8px;text-align:left}
 </div>
 </section>
 
-<!-- LAPORAN -->
 <section id="laporan">
 <div class="card">
 <h3>Rekap Transaksi</h3>
-<button onclick="exportCSV()">Export Excel</button>
 <table>
-<thead>
-<tr><th>Tanggal</th><th>Total</th></tr>
-</thead>
+<thead><tr><th>Tanggal</th><th>Total</th></tr></thead>
 <tbody id="dataLaporan"></tbody>
 </table>
 </div>
@@ -126,14 +106,11 @@ const db = firebase.database();
 function showPage(id){
 document.querySelectorAll("section").forEach(s=>s.style.display="none");
 document.getElementById(id).style.display="block";
-
 if(id==="kasir") startScanner();
 }
-
 showPage("dashboard");
 
-/* ================= MASTER BARANG ================= */
-
+/* MASTER BARANG */
 function tambahBarang(){
 let id=Date.now();
 db.ref("barang/"+id).set({
@@ -159,41 +136,23 @@ listBarang.innerHTML=html;
 stokAlert.innerHTML=alert;
 });
 
-/* ================= KASIR ================= */
-
+/* KASIR */
 let cartData={};
 let scanner;
 
 function startScanner(){
 if(scanner) return;
-
 scanner = new Html5Qrcode("reader");
-scanner.start(
-{ facingMode: "environment" },
-{ fps: 10, qrbox: 250 },
+scanner.start({ facingMode:"environment" },{ fps:10, qrbox:250 },
 barcode => tambahKeranjang(barcode)
-).catch(err=>{
-console.log("Scanner tidak aktif:", err);
-});
+).catch(err=>console.log(err));
 }
 
 function tambahKeranjang(barcode){
-
 db.ref("barang").orderByChild("barcode").equalTo(barcode).once("value",snap=>{
-
-if(!snap.exists()){
-alert("Barang tidak ditemukan");
-return;
-}
-
+if(!snap.exists()){ alert("Barang tidak ditemukan"); return; }
 snap.forEach(d=>{
 let b=d.val();
-
-if(b.stok<=0){
-alert("Stok habis!");
-return;
-}
-
 if(!cartData[d.key]) cartData[d.key]={...b,qty:0};
 cartData[d.key].qty++;
 renderCart();
@@ -203,29 +162,18 @@ renderCart();
 
 function renderCart(){
 let html="",total=0;
-
 for(let id in cartData){
 let item=cartData[id];
 let sub=item.qty*item.harga;
 total+=sub;
-
-html+=`<tr>
-<td>${item.nama}</td>
-<td>${item.qty}</td>
-<td>${sub}</td>
-</tr>`;
+html+=`<tr><td>${item.nama}</td><td>${item.qty}</td><td>${sub}</td></tr>`;
 }
-
 cart.innerHTML=html;
-document.getElementById("total").innerText=total;
+totalEl.innerText=total;
 }
 
 function simpanTransaksi(){
-
-if(Object.keys(cartData).length===0){
-alert("Keranjang kosong!");
-return;
-}
+if(Object.keys(cartData).length===0){ alert("Keranjang kosong!"); return; }
 
 let id=Date.now();
 let total=Number(document.getElementById("total").innerText);
@@ -235,12 +183,9 @@ tanggal:new Date().toISOString(),
 total:total
 });
 
-/* KURANGI STOK */
 for(let key in cartData){
 let item=cartData[key];
-db.ref("barang/"+key+"/stok").transaction(stok=>{
-return stok-item.qty;
-});
+db.ref("barang/"+key+"/stok").transaction(stok=>stok-item.qty);
 }
 
 cartData={};
@@ -248,8 +193,7 @@ renderCart();
 alert("Transaksi berhasil!");
 }
 
-/* ================= DASHBOARD ================= */
-
+/* DASHBOARD */
 db.ref("transaksi").on("value",snap=>{
 let hariIni=0,bulanIni=0,totalTrx=0;
 let dataGrafik={},laporan="";
@@ -259,20 +203,16 @@ let bulan=new Date().toISOString().slice(0,7);
 snap.forEach(d=>{
 let t=d.val();
 let tgl=t.tanggal.slice(0,10);
-
 totalTrx++;
-
 if(tgl===today) hariIni+=t.total;
 if(t.tanggal.slice(0,7)===bulan) bulanIni+=t.total;
-
 if(!dataGrafik[tgl]) dataGrafik[tgl]=0;
 dataGrafik[tgl]+=t.total;
-
 laporan+=`<tr><td>${tgl}</td><td>${t.total}</td></tr>`;
 });
 
-hariIniEl.innerText="Rp "+hariIni;
-bulanIniEl.innerText="Rp "+bulanIni;
+hariIni.innerText="Rp "+hariIni;
+bulanIni.innerText="Rp "+bulanIni;
 totalTransaksi.innerText=totalTrx;
 dataLaporan.innerHTML=laporan;
 
@@ -284,31 +224,12 @@ function updateChart(data){
 let ctx=document.getElementById("grafik").getContext("2d");
 let labels=Object.keys(data);
 let values=Object.values(data);
-
 if(chart) chart.destroy();
 chart=new Chart(ctx,{
 type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Penjualan",
-data:values,
-borderWidth:2
-}]
-}
+data:{labels:labels,datasets:[{label:"Penjualan",data:values}]}
 });
 }
-</script>
-
-  let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="laporan.csv";
-a.click();
-}
-
-const scanner = new Html5Qrcode("reader");
-scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-barcode => tambahKeranjang(barcode));
 </script>
 
 </body>
