@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WARUNG MAS ADE PRO MAX</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -11,64 +11,60 @@
 
 <style>
 body{font-family:Arial;margin:0;background:#eef2f7}
-header{background:#111827;color:white;padding:15px;text-align:center;font-size:18px}
+header{background:#111827;color:white;padding:15px;text-align:center}
 nav{display:flex;gap:5px;background:#1f2937;padding:8px}
-nav button{flex:1;padding:10px;border:none;background:#10b981;color:white;font-weight:bold;border-radius:6px}
+nav button{flex:1;padding:10px;border:none;background:#10b981;color:white;border-radius:6px}
 section{display:none;padding:12px}
-.card{background:white;padding:12px;margin-bottom:12px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
-input{width:100%;padding:8px;margin:4px 0;border-radius:6px;border:1px solid #ccc}
-button{cursor:pointer}
-table{width:100%;font-size:13px;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:6px}
-.total{font-weight:bold;font-size:18px}
-.login-box{max-width:350px;margin:80px auto;background:white;padding:20px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.2)}
-.login-box button{width:100%;padding:10px;background:#10b981;color:white;border:none;border-radius:8px}
+.card{background:white;padding:12px;margin-bottom:12px;border-radius:10px}
+input{width:100%;padding:8px;margin:5px 0}
+.login-box{max-width:350px;margin:80px auto;background:white;padding:20px;border-radius:12px}
+.logout{background:red !important}
+.hidden{display:none !important}
 </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 <div id="loginPage" class="login-box">
-<h3>Login Warung</h3>
+<h3>Login Sistem</h3>
 <input id="username" placeholder="Username">
 <input id="password" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 <p id="loginError" style="color:red"></p>
 </div>
 
-<!-- MAIN APP -->
+<!-- APP -->
 <div id="app" style="display:none">
-
-<header>🏪 WARUNG MAS ADE - PRO MAX</header>
+<header>
+🏪 WARUNG MAS ADE
+<button onclick="logout()" class="logout">Logout</button>
+</header>
 
 <nav>
 <button onclick="showPage('dashboard')">Dashboard</button>
-<button onclick="showPage('barang')">Barang</button>
+<button onclick="showPage('barang')" id="menuBarang">Master Barang</button>
 <button onclick="showPage('kasir')">Kasir</button>
 </nav>
 
 <section id="dashboard">
 <div class="card">
-<h3>Penjualan Hari Ini</h3>
-<div id="hariIni" class="total">Rp 0</div>
+<h3>Total Penjualan</h3>
+<div id="totalPenjualan">Rp 0</div>
 </div>
-<div class="card">
 <canvas id="grafik"></canvas>
-</div>
 </section>
 
 <section id="barang">
 <div class="card">
 <h3>Tambah Barang</h3>
-<input id="nama" placeholder="Nama Barang">
+<input id="nama" placeholder="Nama">
 <input id="harga" type="number" placeholder="Harga">
 <input id="stok" type="number" placeholder="Stok">
 <input id="barcode" placeholder="Barcode">
 <button onclick="tambahBarang()">Simpan</button>
 </div>
-
 <div class="card">
-<table>
+<table width="100%">
 <thead><tr><th>Nama</th><th>Stok</th></tr></thead>
 <tbody id="listBarang"></tbody>
 </table>
@@ -77,46 +73,77 @@ th,td{border:1px solid #ddd;padding:6px}
 
 <section id="kasir">
 <div class="card">
-<input id="scanManual" placeholder="Scan / Input Barcode">
+<input id="scanManual" placeholder="Scan Barcode">
 <button onclick="scanManualBarcode()">Tambah</button>
 </div>
-
 <div class="card">
-<table>
-<thead><tr><th>Nama</th><th>Qty</th><th>Sub</th></tr></thead>
+<table width="100%">
+<thead><tr><th>Nama</th><th>Qty</th></tr></thead>
 <tbody id="cart"></tbody>
 </table>
-<div class="total">Total: Rp <span id="total">0</span></div>
+<div>Total: Rp <span id="total">0</span></div>
 <button onclick="simpanTransaksi()">Simpan</button>
 </div>
 </section>
-
 </div>
 
 <script>
-/* ================= LOGIN ================= */
-
-function login(){
-let user=username.value;
-let pass=password.value;
-
-if(user==="WARUNG" && pass==="12345"){
-loginPage.style.display="none";
-app.style.display="block";
-showPage("dashboard");
-}else{
-loginError.innerText="Username atau password salah!";
-}
-}
-
-/* ================= FIREBASE ================= */
-
 firebase.initializeApp({
 databaseURL:"https://warung-mas-ade-default-rtdb.asia-southeast1.firebasedatabase.app/"
 });
 const db=firebase.database();
 
-/* ================= NAVIGATION ================= */
+/* ================= SESSION CHECK ================= */
+
+window.onload=function(){
+let session=localStorage.getItem("user");
+if(session){
+initApp(JSON.parse(session));
+}
+};
+
+/* ================= LOGIN ================= */
+
+function login(){
+db.ref("users").once("value",snap=>{
+let found=false;
+
+snap.forEach(d=>{
+let u=d.val();
+if(u.username===username.value && u.password===password.value){
+found=true;
+localStorage.setItem("user",JSON.stringify(u));
+initApp(u);
+}
+});
+
+if(!found){
+loginError.innerText="Login gagal!";
+}
+});
+}
+
+function initApp(user){
+loginPage.style.display="none";
+app.style.display="block";
+showPage("dashboard");
+
+/* Role Control */
+if(user.role==="kasir"){
+menuBarang.classList.add("hidden");
+}else{
+menuBarang.classList.remove("hidden");
+}
+}
+
+/* ================= LOGOUT ================= */
+
+function logout(){
+localStorage.removeItem("user");
+location.reload();
+}
+
+/* ================= NAV ================= */
 
 function showPage(id){
 document.querySelectorAll("section").forEach(s=>s.style.display="none");
@@ -152,7 +179,7 @@ let cartData={};
 function scanManualBarcode(){
 let code=scanManual.value;
 db.ref("barang").orderByChild("barcode").equalTo(code).once("value",snap=>{
-if(!snap.exists()){alert("Barang tidak ditemukan");return;}
+if(!snap.exists()){alert("Tidak ditemukan");return;}
 snap.forEach(d=>{
 let b=d.val();
 if(!cartData[d.key]) cartData[d.key]={...b,qty:0};
@@ -166,9 +193,8 @@ function renderCart(){
 let html="",total=0;
 for(let id in cartData){
 let item=cartData[id];
-let sub=item.qty*item.harga;
-total+=sub;
-html+=`<tr><td>${item.nama}</td><td>${item.qty}</td><td>${sub}</td></tr>`;
+total+=item.qty*item.harga;
+html+=`<tr><td>${item.nama}</td><td>${item.qty}</td></tr>`;
 }
 cart.innerHTML=html;
 document.getElementById("total").innerText=total;
@@ -190,20 +216,24 @@ db.ref("barang/"+key+"/stok").transaction(s=>s-item.qty);
 
 cartData={};
 renderCart();
-alert("Transaksi berhasil");
+alert("Transaksi sukses");
 }
 
 /* ================= DASHBOARD ================= */
 
 let chart;
 db.ref("transaksi").on("value",snap=>{
-let data={};
+let total=0,data={};
+
 snap.forEach(d=>{
 let t=d.val();
+total+=t.total;
 let tgl=t.tanggal.slice(0,10);
 if(!data[tgl]) data[tgl]=0;
 data[tgl]+=t.total;
 });
+
+totalPenjualan.innerText="Rp "+total;
 updateChart(data);
 });
 
